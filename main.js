@@ -88,12 +88,12 @@ app.post('/v1/complete', async (req, res) => {
       if (isStream) {
         let finalResp = {completion: "", stop_reason: "stop_sequence"};
         res.write(`event: completion\r\ndata: ${JSON.stringify(finalResp)}\r\n\r\n`);
-        res.end();
       }
       else {
         res.write(JSON.stringify({completion: fullContent, stop_reason: "stop_sequence"}));
-        res.end();
       }
+      res.end();
+      console.log(`Request done.`)
     });
 
   } catch (error) {
