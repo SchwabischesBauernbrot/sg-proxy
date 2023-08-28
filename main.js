@@ -2,7 +2,6 @@ require("dotenv").config();
 
 const express = require('express');
 const axios = require('axios');
-const { exit } = require("process");
 const app = express();
 app.use(express.json());
 
@@ -116,14 +115,50 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Promise Rejection:', reason);
 });
 
-if (!API_TOKEN) {
-  console.error("SourceGraph API token not found! Create a file named '.env' and put your token there as an API_TOKEN. See .env.example for an example.");
-  exit();
-}
-else if (API_TOKEN.indexOf("sgp_") == -1) {
-  console.error("Invalid SourceGraph API token! Make sure you copied the whole token starting with sgp_, like 'sgp-blablabla'.");
-  exit();
+async function checkToken(token) {
+  const data = {
+    query: 'query { currentUser { username } }'
+  };
+
+  const config = {
+    method: 'post',
+    url: 'https://sourcegraph.com/.api/graphql',
+    headers: { 
+      'Authorization': `token ${token}`
+    },
+    data: data
+  };
+
+  try {
+    const response = await axios(config);
+    if(response.data && response.data.data && response.data.data.currentUser) {
+      console.log(`Token works, username: ${response.data.data.currentUser.username}`);
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    return false;
+  }
 }
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Server listening on port ${port}`));
+// Two basic checks
+if (!API_TOKEN) {
+  console.error("SourceGraph API token not found! Create a file named '.env' and put your token there as an API_TOKEN. See .env.example for an example.");
+  process.exit(1);
+}
+else if (API_TOKEN.indexOf("sgp_") == -1) {
+  console.error("Invalid SourceGraph API token! Make sure you copied the whole token starting with sgp_, like 'sgp_blablabla'.");
+  process.exit(1);
+}
+
+// Check token validity
+checkToken(API_TOKEN).then(isValid => {
+  if (!isValid) {
+    console.error("Invalid SourceGraph API token! The token is not valid. Make sure you copied the whole token.");
+    process.exit(1);
+  }
+
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => console.log(`Server listening on port ${port}`));
+});
