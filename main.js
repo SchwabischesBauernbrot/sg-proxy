@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require('express');
 const axios = require('axios');
+const { exit } = require("process");
 const app = express();
 app.use(express.json());
 
@@ -114,6 +115,15 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Promise Rejection:', reason);
 });
+
+if (!API_TOKEN) {
+  console.error("SourceGraph API token not found! Create a file named '.env' and put your token there as an API_TOKEN. See .env.example for an example.");
+  exit();
+}
+else if (API_TOKEN.indexOf("sgp_") == -1) {
+  console.error("Invalid SourceGraph API token! Make sure you copied the whole token starting with sgp_, like 'sgp-blablabla'.");
+  exit();
+}
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server listening on port ${port}`));
