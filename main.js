@@ -155,7 +155,7 @@ else if (API_TOKEN.indexOf("sgp_") == -1) {
 // Check token validity
 checkToken(API_TOKEN).then(isValid => {
   if (!isValid) {
-    console.error("Invalid SourceGraph API token! The token is not valid. Make sure you copied the whole token.");
+    console.error("Invalid SourceGraph API token! Make sure you copied the whole token and that the token is not revoked.");
     process.exit(1);
   }
 
