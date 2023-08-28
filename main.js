@@ -21,7 +21,10 @@ app.post('/v1/complete', async (req, res) => {
   const top_k = req.body.top_k || null;
   const maxTokens = req.body.max_tokens_to_sample;
   const stopSequences = req.body.stop_sequences || null;
+  const isStream = req.body.stream || false;
   const prompt = req.body.prompt;
+
+  console.log(`Doing a request with stream = ${isStream}.`)
 
   // Set up axios instance for SSE
   const sourcegraph = axios.create({
@@ -33,6 +36,8 @@ app.post('/v1/complete', async (req, res) => {
     responseType: 'stream',
     timeout: 180000,
   });
+
+  let fullContent = "";
 
   try {
     let postData = {
@@ -61,11 +66,17 @@ app.post('/v1/complete', async (req, res) => {
         try {
           const parsedData = JSON.parse(chunk);
           if ('completion' in parsedData) {
-            const newPart = parsedData.completion.replace(previousCompletion, '');
-            previousCompletion = parsedData.completion;
-            let resp = { completion: newPart, stop_reason: null };
             //console.log(resp);
-            res.write(`event: completion\r\ndata: ${JSON.stringify(resp)}\r\n\r\n`);
+            if (isStream) {
+              // SourceGraph API always returns the full string, but we need the diff
+              const newPart = parsedData.completion.replace(previousCompletion, '');
+              previousCompletion = parsedData.completion;
+              let resp = { completion: newPart, stop_reason: null };
+              res.write(`event: completion\r\ndata: ${JSON.stringify(resp)}\r\n\r\n`);
+            }
+            else {
+              fullContent = parsedData.completion;
+            }
           }
         } catch (error) {
           // If an error is thrown, the JSON is not valid
@@ -74,13 +85,19 @@ app.post('/v1/complete', async (req, res) => {
     });
 
     response.data.on('end', () => {
-      let finalResp = {completion: "", stop_reason: "stop_sequence"};
-      res.write(`event: completion\r\ndata: ${JSON.stringify(finalResp)}\r\n\r\n`);
-      res.end();
+      if (isStream) {
+        let finalResp = {completion: "", stop_reason: "stop_sequence"};
+        res.write(`event: completion\r\ndata: ${JSON.stringify(finalResp)}\r\n\r\n`);
+        res.end();
+      }
+      else {
+        res.write(JSON.stringify({completion: fullContent, stop_reason: "stop_sequence"}));
+        res.end();
+      }
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("Got an error: ", error);
     res.status(500).send('An error occurred while making the request.');
   }
 });
