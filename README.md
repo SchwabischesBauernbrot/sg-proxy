@@ -1,4 +1,7 @@
 # SG-proxy
+
+Newer info on here: https://rentry.org/sg_proxy
+
 1) Create a SourceGraph account
 2) Go to https://sourcegraph.com/, click your profile icon in upper-right, then Settings, then go to Account->Access tokens, and generate a new token
 3) Create a `.env` and put your token there
