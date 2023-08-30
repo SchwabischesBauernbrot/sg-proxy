@@ -11,6 +11,23 @@ app.use(bodyParser.urlencoded({limit: '100mb', extended: true}));
 
 const API_TOKEN = process.env.API_TOKEN;
 
+function handleError(res, isStream) {
+  // If the request hasn't finished, notify the user that there was an error and finish
+  // the request properly, so that ST isn't left hanging.
+  const errMsg = "\n**Received an error during the request, please check sg-proxy logs!**";
+  let jsonResp = {completion: errMsg, stop_reason: "stop_sequence"};
+  if (!res.writableEnded) {
+    if (isStream) {
+      res.write(`event: completion\r\ndata: ${JSON.stringify(jsonResp)}\r\n\r\n`);
+    } else {
+      // This is unlikely to trigger, but can happen if the error was caught
+      // before the request was sent (without streaming)
+      res.json(jsonResp);
+    }
+    res.end();
+  }
+}
+
 app.post('/v1/complete', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
@@ -19,17 +36,18 @@ app.post('/v1/complete', async (req, res) => {
   res.flushHeaders();
   
   //console.log(req.body);
+  // Those are required and must always be present
   const model = req.body.model;
+  const maxTokens = req.body.max_tokens_to_sample;
+  const prompt = req.body.prompt;
+
   const temp = req.body.temperature || 1.0;
   const top_p = req.body.top_p || null;
   const top_k = req.body.top_k || null;
-  const maxTokens = req.body.max_tokens_to_sample;
   const stopSequences = req.body.stop_sequences || null;
   const isStream = req.body.stream || false;
-  const prompt = req.body.prompt;
 
   console.log(`Doing a request with stream = ${isStream}.`)
-
   // Set up axios instance for SSE
   const sourcegraph = axios.create({
     baseURL: 'https://sourcegraph.com/.api/completions/stream',
@@ -108,14 +126,14 @@ app.post('/v1/complete', async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Got an error: ", error);
-    res.status(500).send('An error occurred while making the request.');
+    console.error("Got an error in the main route:\n", error);
+    handleError(res, isStream);
   }
 });
 
 app.use((err, req, res, next) => {
-  console.log(err);
-  res.status(500).json({"error": true});
+  console.log("Got an unhandled exception:\n", err);
+  handleError(res, req.body && req.body.stream || false);
 });
 
 process.on('uncaughtException', (err) => {
