@@ -3,6 +3,8 @@ require("dotenv").config();
 const express = require('express');
 const axios = require('axios');
 const app = express();
+const StringDecoder = require('string_decoder').StringDecoder;
+
 const bodyParser = require('body-parser');
 app.use(bodyParser.json({ limit: '100mb' }));
 app.use(bodyParser.urlencoded({limit: '100mb', extended: true}));
@@ -55,10 +57,12 @@ app.post('/v1/complete', async (req, res) => {
     const response = await sourcegraph.post('', postData);
 
     let previousCompletion = "";
+    // GPT-4 told me to use a StringDecoder so that multi-byte characters are correctly handled across chunks
+    let decoder = new StringDecoder('utf8');
     let buffer = ""; // Buffer to hold incomplete lines
 
     response.data.on('data', (chunk) => {
-      buffer += chunk.toString();
+      buffer += decoder.write(chunk);
       let lines = buffer.split("\n");
       buffer = lines.pop(); // Keep the last (potentially incomplete) line in the buffer
 
@@ -71,7 +75,8 @@ app.post('/v1/complete', async (req, res) => {
             //console.log(resp);
             if (isStream) {
               // SourceGraph API always returns the full string, but we need the diff
-              const newPart = parsedData.completion.replace(previousCompletion, '');
+              // We can use .length because StringDecoder correctly handles multi-byte characters
+              const newPart = parsedData.completion.substring(previousCompletion.length); 
               previousCompletion = parsedData.completion;
               let resp = { completion: newPart, stop_reason: null };
               res.write(`event: completion\r\ndata: ${JSON.stringify(resp)}\r\n\r\n`);
@@ -81,12 +86,16 @@ app.post('/v1/complete', async (req, res) => {
             }
           }
         } catch (error) {
-          // If an error is thrown, the JSON is not valid
-          console.error('Invalid JSON:', chunk);
+          console.log("Invalid JSON chunk: ", chunk);
+          // do nothing, the JSON chunk is incomplete
       }})
     });
 
     response.data.on('end', () => {
+      // Since the last char will be a newline char and not a multi-byte one, we're sure that
+      // the decoder will be empty, so we can just end it.
+      decoder.end();
+      
       if (isStream) {
         let finalResp = {completion: "", stop_reason: "stop_sequence"};
         res.write(`event: completion\r\ndata: ${JSON.stringify(finalResp)}\r\n\r\n`);
