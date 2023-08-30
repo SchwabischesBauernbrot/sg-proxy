@@ -1,4 +1,4 @@
 #!/bin/bash
 
-npm install
-node main.js --no-audit
+npm install --no-audit
+node main.js
