@@ -129,7 +129,7 @@ app.post('/v1/complete', async (req, res) => {
 
   } catch (error) {
     if (error.response && error.response.status === 429) {
-      console.log("Got a 429 (Too Many Requests), seems like you've hit your ratelimit for the day.");
+      console.error("Got a 429 (Too Many Requests), seems like you've hit your ratelimit for the day.");
       handleError(res, isStream, "\n**You've hit your ratelimit for the day, use a different account or wait.**")
     }
     else {
