@@ -53,7 +53,10 @@ app.post('/v1/complete', async (req, res) => {
     baseURL: 'https://sourcegraph.com/.api/completions/stream',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `token ${API_TOKEN}`
+      'Authorization': `token ${API_TOKEN}`,
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+      'X-Requested-With': 'Sourcegraph',
+      'X-Sourcegraph-Client': 'https://sourcegraph.com',
     },
     responseType: 'stream',
     timeout: 180000,
