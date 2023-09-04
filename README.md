@@ -14,6 +14,7 @@ If you want to use it remotely, you can use any tunneling service e.g. ngrok or 
 Enjoy.
 
 ### Updates
+- 04/09/2023 - Fixed getting 403 on completion requests - seems like SourceGraph started checking for some additional headers, not a big deal. 
 - 30/08/2023 - Fixed two reported issues - [broken streaming for multi-byte characters (non-English text)](https://gitgud.io/cncanon/sg-proxy/-/issues/2) and [misleading error for when there's an error](https://gitgud.io/cncanon/sg-proxy/-/issues/1). Now you should be able to stream non-English text (Japanese, Russian, etc) and, if sg-proxy catches an error, see the note about it in the message instead of ST never finishing the request. 
 
 ### Notes
