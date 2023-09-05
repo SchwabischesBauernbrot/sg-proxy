@@ -5,6 +5,16 @@ const axios = require('axios');
 const app = express();
 const StringDecoder = require('string_decoder').StringDecoder;
 
+const https = require('https');
+
+// HOW DID YOU EVEN THINK ABOUT CHECKING FOR THIS, SG DEVS??!?! Taking gatekeeping lessons from /aicg/?
+// Not that it matters much though.
+const agent = new https.Agent({
+  ciphers: 'TLS_AES_256_GCM_SHA384'
+});
+
+axios.defaults.httpsAgent = agent;
+
 const bodyParser = require('body-parser');
 app.use(bodyParser.json({ limit: '100mb' }));
 app.use(bodyParser.urlencoded({limit: '100mb', extended: true}));
