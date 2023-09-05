@@ -1,3 +1,12 @@
+# Warning
+This repository is being monitored by SourceGraph developers, so I do not have any guarantees or promises about this not breaking right away.
+If they continue to change things around, I might stop updating sg-proxy altogether.
+
+# Note
+If you are ratelimited and want to check the ratelimit for your account, go to the [Cody chat](https://sourcegraph.com/cody) and send a message. When over the limit, you should see an error like this:
+>Request failed: you exceeded the rate limit for chat_completions, only 3 requests are allowed per day at the moment to ensure the service stays functional. Current usage: 3. Retry after 2023-09-06 <time> +0000 UTC
+
+
 # sg-proxy - free Claude
 
 Requirements: Node, NPM.
